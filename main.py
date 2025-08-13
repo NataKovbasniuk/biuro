@@ -21,47 +21,59 @@ if __name__ == "__main__":
 def health():
     return {"status": "OK"}
 
+
 class TripIn(BaseModel):
-    destination: str = Field(..., example="Barcelona")
-    month:str = Field(..., example = "July")
+    destination: str = Field(..., example="London")
+    month: str = Field(..., example="January")
     price_pln: float = Field(..., ge=0, example=2500.0)
 
-    @validator("destination", "month")
-    def not_empty(cls,v):
+    @field_validator("destination", "month")
+    @classmethod
+    def not_empty(cls, v):
         if not v or not v.strip():
             raise ValueError("destination cannot be empty")
         return v.strip()
+class TripOut(BaseModel):
+    id: int
+    destination: str
+    month:str
+    price: float
+    currency: str
 
 
 def init_db():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute('''CREATE TABLE IF NOT EXISTS trips ( 
-    id INTGER PRIMARY KEY AUTOINCREMENT,
-    destination TEXT NOT NULL,
-    month TEXT NOT NULL,
-    price_pln  REAL NOT NULL)''')
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS trips (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        destination TEXT NOT NULL,
+        month TEXT NOT NULL,
+        price_pln  REAL NOT NULL,)
+    ''')
     conn.commit()
     conn.close()
 
-def add_trip_to_db(destination: str, month: str, price_pln: float) -> int:
-    try:
-        conn = sqlite3.connect(DB_PATH)
-        c = conn.cursor()
-        c.execute(
-            'INSERT INTO trips (destination, month, price_pln) VALUES (?, ?, ?, ?)',
-            (destination, month, price_pln)
-        )
-        conn.commit()
-        trip_id = c.lastrowid
-        conn.close()
-        return trip_id
-    except sqlite3.DatabaseError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+def add_trip_to_db(destination:str, month:str, price_pln:float) -> int:
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute(
+        'INSERT INTO trips (destination, month, price_pln) VALUES (?, ?, ?)',
+        (destination, month, price_pln)
+    )
+    conn.commit()
+    trip_id = c.lastrowid
+    conn.close()
+    return trip_id
 
-
-init_db()
-
+def get_all_trips():
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute('SELECT id, destination, month, price_pln FROM trips WHERE destination = ?', (destination,)
+              )
+    rows = c.fetchall()
+    conn.close()
+    return rows
 @app.get("/health")
 def health():
     return {"status": "OK"}
