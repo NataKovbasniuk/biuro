@@ -83,20 +83,34 @@ async def lifespan(app: FastAPI):
     yield
 
 
-@app.get("/health")
-def health():
-    return {"status": "OK"}
-@app.post("/trips", status_code=201)
-def create_trip(trip: TripIn):
-    trip_id = add_trip_to_db(trip.destination, trip.month, trip.price_pln)
-    return {"trip_id": trip_id,
-            "destination": trip.destination,
-            "month": trip.month,
-            "price_pln": trip.price_pln
-            }
+app = FastAPI(
+    title="Trips API",
+    description="A simple API to interact with Trips.",
+    version="1.0.0",
+    lifespan= lifespan
+)
+
+
+
+@app.post("/trips", response_model=TripOut, status_code=201)
+def list_trips(currency: str = Query("PLN", examples="USD")):
+    trips = get_all_trips()
+    return [
+        TripOut(
+            id=row[0],
+            destination=row[1],
+            month=row[2],
+            price=convert_price(row[3], currency),
+            currency=currency.upper()
+        )
+        for row in trips
+    ]
 @app.get("/")
 def root():
     return {"message": "Trips API dziala!"}
+@app.get("/health")
+def health():
+    return {"status": "ok"}
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main:app", host="127.0.0.1", port=8000)
