@@ -77,6 +77,11 @@ def convert_price(price_pln: float, currency: str) -> float:
     except requests.RequestException:
         raise HTTPException(status_code=400, detail="Request failed")
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_db()
+    yield
+
 
 @app.get("/health")
 def health():
