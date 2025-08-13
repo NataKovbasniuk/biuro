@@ -4,10 +4,13 @@ from typing import List, Dict, Any
 
 DB_PATH = "travel.db"
 
+def get_conn() -> sqlite3.Connection:
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row  # <-- ВАЖЛИВО: рядки як словники
+    return conn
+
 def init_db() -> None:
-    """Tworzy bazę danych i tabelę trips, jeśli nie istnieje."""
-    first_time = not os.path.exists(DB_PATH)
-    with sqlite3.connect(DB_PATH) as conn:
+    with get_conn() as conn:
         conn.execute("""
             CREATE TABLE IF NOT EXISTS trips (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -18,42 +21,33 @@ def init_db() -> None:
         """)
         conn.commit()
 
-    if first_time:
-        print("Utworzono plik bazy: travel.db")
-    else:
-        print("Plik travel.db już istnieje – tabela trips została zapewniona.")
-
-def get_conn():
-    """Zwraca połączenie do bazy danych."""
-    return sqlite3.connect(DB_PATH)
-
-def add_trip(destination: str, month: str, price_pln: float) -> None:
-    """Dodaje nową podróż do bazy."""
+def add_trip(destination: str, month: str, price_pln: float) -> int:
     with get_conn() as conn:
-        conn.execute("""
-            INSERT INTO trips (destination, month, price_pln)
-            VALUES (?, ?, ?)
-        """, (destination, month, price_pln))
+        cur = conn.execute(
+            "INSERT INTO trips(destination, month, price_pln) VALUES (?, ?, ?);",
+            (destination, month, price_pln),
+        )
         conn.commit()
+        return cur.lastrowid
 
 def get_all_trips() -> List[Dict[str, Any]]:
-    """Zwraca wszystkie podróże."""
     with get_conn() as conn:
-        rows = conn.execute("SELECT id, destination, month, price_pln FROM trips").fetchall()
+        rows = conn.execute(
+            "SELECT id, destination, month, price_pln FROM trips ORDER BY id;"
+        ).fetchall()
         return [dict(r) for r in rows]
 
 def get_trips_by_destination(destination: str) -> List[Dict[str, Any]]:
-    """Zwraca podróże do danego miejsca (bez rozróżniania wielkości liter)."""
     with get_conn() as conn:
-        rows = conn.execute("""
-            SELECT id, destination, month, price_pln FROM trips
-            WHERE destination = ? COLLATE NOCASE ORDER BY id
-        """, (destination,)).fetchall()
+        rows = conn.execute(
+            "SELECT id, destination, month, price_pln FROM trips "
+            "WHERE destination = ? COLLATE NOCASE ORDER BY id;",
+            (destination,),
+        ).fetchall()
         return [dict(r) for r in rows]
 
 if __name__ == "__main__":
     init_db()
-
     if not get_all_trips():
         add_trip("Warszawa", "maj", 1200.0)
         add_trip("Gdańsk", "lipiec", 950.0)
