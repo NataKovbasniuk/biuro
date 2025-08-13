@@ -1,0 +1,27 @@
+# Wirtualne środowiska
+venv/
+.venv/
+
+# Pliki bazy danych
+*.db
+
+# Pliki kompilowane przez Pythona
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Logi
+*.log
+
+# Pliki systemowe
+.DS_Store
+Thumbs.db
+
+# Pliki IDE / edytorów
+.idea/
+.vscode/
+
+# Inne pliki tymczasowe
+*.tmp
+*.swp
