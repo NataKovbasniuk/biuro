@@ -42,6 +42,21 @@ def init_db():
     conn.commit()
     conn.close()
 
+def add_trip_to_db(destination: str, month: str, price_pln: float) -> int:
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        c.execute(
+            'INSERT INTO trips (destination, month, price_pln) VALUES (?, ?, ?, ?)',
+            (destination, month, price_pln)
+        )
+        conn.commit()
+        trip_id = c.lastrowid
+        conn.close()
+        return trip_id
+    except sqlite3.DatabaseError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
 
 
 
