@@ -58,6 +58,28 @@ def add_trip_to_db(destination: str, month: str, price_pln: float) -> int:
         raise HTTPException(status_code=400, detail=str(e))
 
 
+@app.on_event("startup")
+def startup():
+    init_db()
+
+@app.get("/health")
+def health():
+    return {"status": "OK"}
+@app.post("/trips", status_code=201)
+def create_trip(trip: TripIn):
+    trip_id = add_trip_to_db(trip.destination, trip.month, trip.price_pln)
+    return {"trip_id": trip_id,
+            "destination": trip.destination,
+            "month": trip.month,
+            "price_pln": trip.price_pln
+            }
+@app.get("/")
+def root():
+    return {"message": "Trips API dziala!"}
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("app:app", host="127.0.0.1", port=8000, reload = True)
+
 
 
 
