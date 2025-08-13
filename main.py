@@ -1,10 +1,12 @@
-from dbm import sqlite3
+import sqlite3
 
-import uvicorn
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, Field, validator
+from fastapi import FastAPI, HTTPException, Query
+from pydantic import BaseModel, Field, field_validator
+from contextlib import asynccontextmanager
+import requests
 
 DB_PATH = "trips.db"
+NPB_API_URL = "https://api.nbp.pl/api/exchangerates/rates/A/{currency}/?format=json/"
 
 app = FastAPI(title= "Trips API")
 
@@ -13,7 +15,7 @@ def root():
     return {"message": "Trips API dziala!"}
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("app:app", host="127.0.0.1", port=8000, reload = True)
+    uvicorn.run("main:app", host="127.0.0.1", port=8000)
 
 @app.get("/health")
 def health():
@@ -58,9 +60,7 @@ def add_trip_to_db(destination: str, month: str, price_pln: float) -> int:
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@app.on_event("startup")
-def startup():
-    init_db()
+init_db()
 
 @app.get("/health")
 def health():
@@ -78,7 +78,7 @@ def root():
     return {"message": "Trips API dziala!"}
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("app:app", host="127.0.0.1", port=8000, reload = True)
+    uvicorn.run("main:app", host="127.0.0.1", port=8000)
 
 
 
