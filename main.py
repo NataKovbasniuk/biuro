@@ -8,18 +8,7 @@ import requests
 DB_PATH = "trips.db"
 NPB_API_URL = "https://api.nbp.pl/api/exchangerates/rates/A/{currency}/?format=json/"
 
-app = FastAPI(title= "Trips API")
 
-@app.get("/")
-def root():
-    return {"message": "Trips API dziala!"}
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run("main:app", host="127.0.0.1", port=8000)
-
-@app.get("/health")
-def health():
-    return {"status": "OK"}
 
 
 class TripIn(BaseModel):
@@ -74,6 +63,21 @@ def get_all_trips():
     rows = c.fetchall()
     conn.close()
     return rows
+
+
+def convert_price(price_pln: float, currency: str) -> float:
+    if currency.upper() == "PLN":
+        return round(price_pln, 2)
+    try:
+        response = requests.get(NPB_API_URL.format(currency=currency.upper()), timeout=5)
+        response.raise_for_status()
+        data = response.json()
+        rate = data["rates"][0]["mid"]
+        return round(price_pln / rate, 2)
+    except requests.RequestException:
+        raise HTTPException(status_code=400, detail="Request failed")
+
+
 @app.get("/health")
 def health():
     return {"status": "OK"}
